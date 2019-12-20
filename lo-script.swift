@@ -2,7 +2,7 @@
 
 /*
     Run command in terminal with:
-    > swift lo-script.swift
+    > swift lo-script.swift sheetURL
  
     You need to create a sharing link of the google sheet so only people with that link can download the sheet. You must append to the url "/export?format=tsv" or "export?format=tsv&sheet=0" if the sheet has more pages
      Example:  https://docs.google.com/spreadsheets/d/1GbcR_lfekamj2DKWNIXSABVm-V3wLvx6Z9Wy4B1Qrd0/export?format=tsv&sheet=0
@@ -38,14 +38,13 @@ let sheet = try! String(contentsOfFile: "./excel.tsv")
 let fieldDelimiterCharacter = "\t"
 
 var numberOfLanguages = 0
-var foundStartingPoint = false
 
 func handle(comment: String) -> String {
     return "\n// \(comment)\n\n"
 }
 
 func handleLine(key: String, value: String) -> String {
-    return "\"\(key)\" = \"\(value)\";\n"
+    return "\"\(clean(string: key))\" = \"\(clean(string: value))\";\n"
 }
 
 func getLanguagesFrom(sheet: String) -> [String] {
@@ -63,6 +62,10 @@ func getLanguagesFrom(sheet: String) -> [String] {
         }
     }
     return languages
+}
+
+func clean(string: String) -> String {
+    return string.replacingOccurrences(of: "\r", with: "")
 }
 
 // Save string to file
@@ -92,6 +95,8 @@ let lines = sheet.components(separatedBy: "\n")
 let languages = getLanguagesFrom(sheet: sheet)
 
 languages.forEach { language in
+    var foundStartingPoint = false
+
     let index = languages.firstIndex(of: language)!
     var result = """
     /*
