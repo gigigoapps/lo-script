@@ -35,7 +35,8 @@ shell("curl", googleSheetURL, "-o", "excel.tsv")
 //
 
 let sheet = try! String(contentsOfFile: "./excel.tsv")
-let fieldDelimiterCharacter = "\t"
+let rowDelimiterCharacter = "\r\n"
+let columnDelimiterCharacter = "\t"
 
 var numberOfLanguages = 0
 
@@ -44,17 +45,17 @@ func handle(comment: String) -> String {
 }
 
 func handleLine(key: String, value: String) -> String {
-    return "\"\(clean(string: key))\" = \"\(clean(string: value))\";\n"
+    return "\"\(key)\" = \"\(value)\";\n"
 }
 
 func getLanguagesFrom(sheet: String) -> [String] {
     var languages: [String] = []
-    let lines = sheet.components(separatedBy: "\n")
+    let lines = sheet.components(separatedBy: rowDelimiterCharacter)
     lines.forEach { line in
-        let components = line.components(separatedBy: fieldDelimiterCharacter)
+        let components = line.components(separatedBy: columnDelimiterCharacter)
         if let firstComponent = components.first {
             if firstComponent == "[key]" {
-                let lineComponents = line.components(separatedBy: fieldDelimiterCharacter)
+                let lineComponents = line.components(separatedBy: columnDelimiterCharacter)
                 numberOfLanguages = lineComponents.count - 1
                 languages = Array(components.dropFirst())
                 return
@@ -62,10 +63,6 @@ func getLanguagesFrom(sheet: String) -> [String] {
         }
     }
     return languages
-}
-
-func clean(string: String) -> String {
-    return string.replacingOccurrences(of: "\r", with: "")
 }
 
 // Save string to file
@@ -90,7 +87,7 @@ func save(_ content: String, path: String, filename: String) {
     }
 }
 
-let lines = sheet.components(separatedBy: "\n")
+let lines = sheet.components(separatedBy: rowDelimiterCharacter)
 
 let languages = getLanguagesFrom(sheet: sheet)
 
@@ -101,16 +98,16 @@ languages.forEach { language in
     var result = """
     /*
 
-    Automatically Generated - DO NOT modify manually - use the lo-script instead.
+    Automatically Generated - DO NOT modify manually - use lo-script instead.
 
     */
     
 
     """
     lines.forEach { line in
-        let firstDeviceComponent = line.components(separatedBy: fieldDelimiterCharacter).first!
+        let firstDeviceComponent = line.components(separatedBy: columnDelimiterCharacter).first!
         if !firstDeviceComponent.contains("_android") { // only in first row
-            let components = line.components(separatedBy: fieldDelimiterCharacter)
+            let components = line.components(separatedBy: columnDelimiterCharacter)
             if let firstComponent = components.first {
                 if firstComponent == "[key]" {
                     foundStartingPoint = true
@@ -124,9 +121,8 @@ languages.forEach { language in
             }
         }
     }
-    let cleanLanguageString = language.replacingOccurrences(of: "\n", with: "").replacingOccurrences(of: "\r", with: "")
     save(result,
-         path: "./\(cleanLanguageString).lproj/",
+         path: "./\(language).lproj/",
         filename: "Localizable.strings")
 }
 
@@ -194,3 +190,4 @@ fputs("\n Finished 👍\n\n", stderr)
 
 // Remove sheet file
 shell("rm", "excel.tsv")
+
