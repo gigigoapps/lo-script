@@ -2,10 +2,12 @@
 
 /*
     Run command in terminal with:
-    > swift lo-script.swift sheetURL
+    > swift lo-script.swift sheetURL device
  
-    You need to create a sharing link of the google sheet so only people with that link can download the sheet. You must append to the url "/export?format=tsv" or "export?format=tsv&sheet=0" if the sheet has more pages
+    sheetURL: You need to create a sharing link of the google sheet so only people with that link can download the sheet. You must append to the url "/export?format=tsv" or "export?format=tsv&sheet=0" if the sheet has more pages
      Example:  https://docs.google.com/spreadsheets/d/1GbcR_lfekamj2DKWNIXSABVm-V3wLvx6Z9Wy4B1Qrd0/export?format=tsv&sheet=0
+ 
+    device: "ios" or "android"
 */
 
 import Foundation
@@ -25,9 +27,9 @@ enum Device: String {
     func path(forLanguage language: String) -> String {
         switch self {
         case .ios:
-            return "./\(language).lproj/"
+            return "./output/\(language).lproj/"
         case .android:
-            return "./values-\(language)/"
+            return "./output/values-\(language)/"
         }
     }
 }
@@ -164,11 +166,12 @@ languages.forEach { language in
     var foundStartingPoint = false
 
     let index = languages.firstIndex(of: language)!
+    let keyToIgnore = device == Device.ios ? "_android" : "_ios"
     var result = fileHearder(for: device)
     
     lines.forEach { line in
         let firstDeviceComponent = line.components(separatedBy: columnDelimiterCharacter).first!
-        if !firstDeviceComponent.contains("_android") { // only in first row
+        if !firstDeviceComponent.contains(keyToIgnore) { // only in first row
             let components = line.components(separatedBy: columnDelimiterCharacter)
             if let firstComponent = components.first {
                 if firstComponent == "[key]" {
@@ -188,6 +191,9 @@ languages.forEach { language in
          path: device.path(forLanguage: language),
         filename: device.fileName())
 }
+
+// Remove sheet file
+shell("rm", "excel.tsv")
 
 if device == .android { exit(0) }
 
@@ -251,10 +257,7 @@ content += """
 // swiftlint:enable file_length
 """
 
-save(content, path: "./", filename: "LocalizableConstants.swift")
+save(content, path: "./output/", filename: "LocalizableConstants.swift")
 fputs("\n Finished 👍\n\n", stderr)
-
-// Remove sheet file
-shell("rm", "excel.tsv")
 
 
