@@ -10,11 +10,34 @@
 
 import Foundation
 
+enum Device: String {
+    case ios, android
+    
+    func fileName() -> String {
+        switch self {
+        case .ios:
+            return "Localizable.strings"
+        case .android:
+            return "strings.xml"
+        }
+    }
+    
+    func path(forLanguage language: String) -> String {
+        switch self {
+        case .ios:
+            return "./\(language).lproj/"
+        case .android:
+            return "./values-\(language)/"
+        }
+    }
+}
+
 //
 // MARK: STEP 1: ⬇️ Download Google Sheet
 //
 
 let googleSheetURL = CommandLine.arguments[1]
+let device = CommandLine.arguments[2].lowercased() == Device.android.rawValue ? Device.android : Device.ios
 
 // Allows to run a command line tool
 
@@ -41,11 +64,22 @@ let columnDelimiterCharacter = "\t"
 var numberOfLanguages = 0
 
 func handle(comment: String) -> String {
-    return "\n// \(comment)\n\n"
+    switch device {
+    case .ios:
+        return "\n// \(comment)\n\n"
+    case .android:
+        return "\n<!-- \(comment) -->\n"
+
+    }
 }
 
 func handleLine(key: String, value: String) -> String {
-    return "\"\(key)\" = \"\(value)\";\n"
+    switch device {
+    case .ios:
+        return "\"\(key)\" = \"\(value)\";\n"
+    case .android:
+        return "<string name=\"\(key)\">\(value)</string>\n"
+    }
 }
 
 func getLanguagesFrom(sheet: String) -> [String] {
@@ -87,6 +121,41 @@ func save(_ content: String, path: String, filename: String) {
     }
 }
 
+func fileHearder(for device: Device) -> String {
+    switch device {
+    case .ios:
+        return """
+        /*
+
+        Automatically Generated - DO NOT modify manually - use lo-script instead.
+
+        */
+        
+
+        """
+    case .android:
+        return """
+        /*
+        
+        Automatically Generated - DO NOT modify manually - use lo-script instead.
+        
+        */
+        
+        <resources>
+
+        """
+    }
+}
+
+func fileFooter(for device: Device) -> String {
+    switch device {
+    case .ios:
+        return ""
+    case .android:
+        return "\n</resources>"
+    }
+}
+
 let lines = sheet.components(separatedBy: rowDelimiterCharacter)
 
 let languages = getLanguagesFrom(sheet: sheet)
@@ -95,15 +164,8 @@ languages.forEach { language in
     var foundStartingPoint = false
 
     let index = languages.firstIndex(of: language)!
-    var result = """
-    /*
-
-    Automatically Generated - DO NOT modify manually - use lo-script instead.
-
-    */
+    var result = fileHearder(for: device)
     
-
-    """
     lines.forEach { line in
         let firstDeviceComponent = line.components(separatedBy: columnDelimiterCharacter).first!
         if !firstDeviceComponent.contains("_android") { // only in first row
@@ -121,10 +183,13 @@ languages.forEach { language in
             }
         }
     }
+    result += fileFooter(for: device)
     save(result,
-         path: "./\(language).lproj/",
-        filename: "Localizable.strings")
+         path: device.path(forLanguage: language),
+        filename: device.fileName())
 }
+
+if device == .android { exit(0) }
 
 //
 // MARK: STEP 3: 🔃 Generate Constants file
@@ -153,7 +218,8 @@ import Foundation
 // Load
 
 func loadLocalizablePlist() -> [String: String] {
-    let file = "./\(languages.first ?? "en").lproj/Localizable.strings"
+    let language = languages.first ?? "en"
+    let file = device.path(forLanguage: language) + device.fileName()
     guard let dictionary = NSDictionary(contentsOfFile: file) as? [String: String] else {
         fputs("❌ Wrong Localization URL: \(file)\n", stderr)
         exit(-1)
@@ -190,4 +256,5 @@ fputs("\n Finished 👍\n\n", stderr)
 
 // Remove sheet file
 shell("rm", "excel.tsv")
+
 
