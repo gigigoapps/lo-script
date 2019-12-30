@@ -127,17 +127,17 @@ func save(_ content: String, path: String, filename: String) {
     }
 }
 
-func fileHearder(for device: Device) -> String {
+func templateFile(for device: Device) -> String {
     switch device {
     case .ios:
         return """
         /*
 
         Automatically Generated - DO NOT modify manually - use lo-script instead.
-
+        
         */
         
-
+        {{lo-script-content}}
         """
     case .android:
         return """
@@ -148,17 +148,9 @@ func fileHearder(for device: Device) -> String {
         */
         
         <resources>
-
+        {{lo-script-content}}
+        </resources>
         """
-    }
-}
-
-func fileFooter(for device: Device) -> String {
-    switch device {
-    case .ios:
-        return ""
-    case .android:
-        return "\n</resources>"
     }
 }
 
@@ -171,7 +163,7 @@ languages.forEach { language in
 
     let index = languages.firstIndex(of: language)!
     let keyToIgnore = device == Device.ios ? "_android" : "_ios"
-    var result = fileHearder(for: device)
+    var result = ""
     
     lines.forEach { line in
         let firstDeviceComponent = line.components(separatedBy: columnDelimiterCharacter).first!
@@ -190,7 +182,9 @@ languages.forEach { language in
             }
         }
     }
-    result += fileFooter(for: device)
+    
+    result = templateFile(for: device).replacingOccurrences(of: "{{lo-script-content}}", with: result)
+    
     save(result,
          path: device.path(forLanguage: language),
         filename: device.fileName())
@@ -268,5 +262,7 @@ content += """
 
 save(content, path: "./output/", filename: "LocalizableConstants.swift")
 fputs("\n Finished 👍\n\n", stderr)
+
+
 
 
