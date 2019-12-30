@@ -38,6 +38,8 @@ enum Device: String {
 // MARK: STEP 1: ⬇️ Download Google Sheet
 //
 
+fputs("\n ✏️  Downloading Google Sheet... \n", stderr)
+
 let googleSheetURL = CommandLine.arguments[1]
 let device = CommandLine.arguments[2].lowercased() == Device.android.rawValue ? Device.android : Device.ios
 
@@ -58,6 +60,8 @@ shell("curl", googleSheetURL, "-o", "excel.tsv")
 //
 // MARK: STEP 2: ⬇️ Converts Google Sheet to String files
 //
+
+fputs("\n ✏️  Converting Google Sheet to String files... \n", stderr)
 
 let sheet = try! String(contentsOfFile: "./excel.tsv")
 let rowDelimiterCharacter = "\r\n"
@@ -195,11 +199,16 @@ languages.forEach { language in
 // Remove sheet file
 shell("rm", "excel.tsv")
 
-if device == .android { exit(0) }
+if device == .android {
+    fputs("\n Finished 👍\n\n", stderr)
+    exit(0)
+}
 
 //
 // MARK: STEP 3: 🔃 Generate Constants file
 //
+
+fputs("\n ✏️  Generating Constants file... \n", stderr)
 
 extension String {
     func toUpperCase() -> String {

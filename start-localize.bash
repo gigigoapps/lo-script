@@ -8,7 +8,7 @@
 sheetURL="https://docs.google.com/spreadsheets/d/1GbcR_lfekamj2DKWNIXSABVm-V3wLvx6Z9Wy4B1Qrd0/export?format=tsv&sheet=0"
 
 # ios / android
-device="ios"
+device="android"
 
 
 #####
