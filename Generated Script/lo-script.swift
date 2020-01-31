@@ -229,15 +229,10 @@ struct Sheet {
         let template = """
         // Automatically Generated - DO NOT modify manually - use lo-script instead.
 
-        // swiftlint:disable identifier_name
-        // swiftlint:disable file_length
+        // swiftlint:disable:this
 
         import Foundation
-
         {{lo-script-content}}
-
-        // swiftlint:enable identifier_name
-        // swiftlint:enable file_length
         """
 
         // Generate Content
@@ -291,7 +286,6 @@ import Foundation
 fputs("✏️  Generating...", stderr)
 
 let googleSheetURL = CommandLine.arguments[1]
-
 let device = CommandLine.arguments[2].lowercased() == Device.android.rawValue ? Device.android : Device.ios
 
 let sheet = Sheet(fromURL: URL(string: googleSheetURL)!, device: device)
